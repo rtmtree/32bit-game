@@ -1,0 +1,43 @@
+name: Build Win32 (32-bit) EXE
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags: [ "v*" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows-x86:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          # Use a stable Zig version. Adjust if you need a specific one.
+          version: 0.13.0
+
+      - name: Build Win32Game (x86)
+        run: |
+          bash scripts/build-win32.sh
+
+      - name: Build Win32Minimal (x86)
+        run: |
+          bash scripts/build-win32.sh minimal
+
+      - name: Upload EXE artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: win32-exe
+          path: |
+            dist/Win32Game.exe
+            dist/Win32Minimal.exe
+          if-no-files-found: error
+
+
