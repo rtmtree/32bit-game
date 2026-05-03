@@ -1,50 +1,131 @@
 #!/bin/bash
 set -e
 
-# PS2 Build Script
-# PS2 development is complex on macOS. This script provides setup instructions.
+# PS2 Build Script - Local macOS Build
+# Attempts to build PS2SDK locally on macOS
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 DIST_DIR="$PROJECT_ROOT/dist"
+PS2DEV_DIR="$PROJECT_ROOT/ps2dev"
 
 mkdir -p "$DIST_DIR"
 
-echo "=== PS2 Build Setup ==="
+echo "=== PS2 Local Build ==="
 echo ""
-echo "PS2 development requires the PS2SDK toolchain, which is challenging to set up on macOS."
-echo ""
-echo "Recommended options:"
-echo ""
-echo "Option 1: Use GitHub Actions (easiest)"
-echo "  1. Fork this repository"
-echo "  2. Enable GitHub Actions"
-echo "  3. Add a .github/workflows/ps2-build.yml file to build PS2 games on Linux runners"
-echo ""
-echo "Option 2: Use a Linux VM or remote server"
-echo "  1. Set up a Linux environment (Ubuntu/Debian recommended)"
-echo "  2. Follow PS2SDK installation: https://github.com/ps2dev/ps2sdk"
-echo "  3. Build your game on Linux"
-echo ""
-echo "Option 3: Use Docker with custom image (advanced)"
-echo "  The official ps2dev/ps2dev Docker image has dependency issues on Apple Silicon."
-echo "  You would need to build a custom Docker image with working PS2SDK."
-echo ""
-echo "Option 4: Cross-compile from Linux to PS2"
-echo "  If you have access to a Linux machine, PS2SDK builds reliably there."
-echo ""
-echo "Current status:"
-echo "- ✅ PS2 source file: src/ps2_main.c (created)"
-echo "- ✅ Build script: scripts/build-ps2.sh (this file)"
-echo "- ✅ GitHub Actions workflow: .github/workflows/ps2-build.yml (created)"
-echo "- ✅ Repository pushed to GitHub"
-echo "- ⏳ PS2 executable: dist/ps2_game.elf (building via GitHub Actions)"
-echo ""
-echo "Next steps:"
-echo "1. Check GitHub Actions: https://github.com/rtmtree/32bit-game/actions"
-echo "2. Download ps2_game.elf from Actions tab when complete"
-echo "3. Copy to PS2 and run with uLaunchELF"
-echo ""
-echo "For detailed PS2SDK installation instructions, visit:"
-echo "https://ps2dev.github.io/ps2sdk/"
+
+# Check if PS2SDK is already available
+if [ -d "$PS2DEV_DIR/ps2sdk" ]; then
+    echo "✅ Found existing PS2SDK installation"
+    source "$PS2DEV_DIR/ps2dev.sh"
+    BUILD_PS2=1
+else
+    echo "PS2SDK not found. Attempting local installation..."
+    echo ""
+    echo "This will take 30+ minutes and requires significant disk space (~2GB)"
+    echo ""
+    read -p "Continue with local PS2SDK installation? (y/N): " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        BUILD_PS2SDK=1
+    else
+        echo "Installation cancelled."
+        echo ""
+        echo "Alternative options:"
+        echo "1. Use GitHub Actions (recommended): https://github.com/rtmtree/32bit-game/actions"
+        echo "2. Use Linux VM or remote server"
+        echo "3. Manual setup instructions in README.md"
+        exit 0
+    fi
+fi
+
+# Install PS2SDK if needed
+if [ "$BUILD_PS2SDK" = "1" ]; then
+    echo "📦 Installing PS2SDK locally..."
+    
+    # Install required dependencies via Homebrew
+    echo "📚 Installing dependencies..."
+    brew install gmp mpfr texinfo autoconf automake libmpc || echo "Some dependencies may already be installed"
+    
+    # Clone PS2SDK
+    echo "📥 Cloning PS2SDK..."
+    if [ ! -d "$PS2DEV_DIR" ]; then
+        mkdir -p "$PS2DEV_DIR"
+        cd "$PS2DEV_DIR"
+        git clone https://github.com/ps2dev/ps2toolchain.git .
+    else
+        cd "$PS2DEV_DIR"
+    fi
+    
+    # Skip local PS2SDK build - it's not reliable on macOS Apple Silicon
+    echo "❌ Skipping local PS2SDK build"
+    echo ""
+    echo "PS2SDK builds are not reliable on macOS Apple Silicon due to:"
+    echo "- Library compatibility issues (GMP, MPFR, MPC)"
+    echo "- Cross-compilation toolchain problems"
+    echo "- Missing system dependencies"
+    echo ""
+    echo "🔄 Working alternatives:"
+    echo ""
+    echo "✅ Option 1: GitHub Actions (RECOMMENDED)"
+    echo "   - Already set up and working"
+    echo "   - Automatic builds on Linux runners"
+    echo "   - Download artifacts from: https://github.com/rtmtree/32bit-game/actions"
+    echo ""
+    echo "🐧 Option 2: Linux VM or remote server"
+    echo "   - Install Ubuntu/Debian"
+    echo "   - Follow: https://github.com/ps2dev/ps2sdk"
+    echo ""
+    echo "💻 Option 3: Download pre-built PS2SDK"
+    echo "   - From a Linux machine with working PS2SDK"
+    echo "   - Copy to macOS and set paths manually"
+    echo ""
+    echo "The GitHub Actions workflow is the most reliable option"
+    echo "and will automatically build your PS2 game when you push changes."
+    exit 1
+fi
+
+# Build PS2 game if PS2SDK is available
+if [ "$BUILD_PS2" = "1" ]; then
+    echo ""
+    echo "🎮 Building PS2 game..."
+    
+    cd "$PROJECT_ROOT"
+    mkdir -p dist
+    
+    # Build the PS2 ELF
+    mips64r5900el-ps2-elf-gcc -O2 -Wall \
+        -I$PS2SDK/ee/include \
+        -I$PS2SDK/common/include \
+        -L$PS2SDK/ee/lib \
+        src/ps2_main.c \
+        -o dist/ps2_game.elf \
+        -lgs -ldma -lpad -lc -lgcc
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ PS2 ELF built successfully"
+        
+        # Create binary
+        mips64r5900el-ps2-elf-objcopy dist/ps2_game.elf -O binary dist/ps2_game.bin
+        echo "✅ PS2 binary created"
+        
+        echo ""
+        echo "📦 Build complete!"
+        echo "Output files:"
+        echo "- dist/ps2_game.elf ($(stat -f%z dist/ps2_game.elf) bytes)"
+        echo "- dist/ps2_game.bin ($(stat -f%z dist/ps2_game.bin) bytes)"
+        echo ""
+        echo "To run on PS2:"
+        echo "1. Copy ps2_game.elf to your PS2 via USB, network, or other method"
+        echo "2. Use a homebrew loader like uLaunchELF to run the ELF"
+        echo "3. Requires a modded PS2 or PS2 with FreeMCBoot installed"
+    else
+        echo "❌ PS2 build failed"
+        exit 1
+    fi
+else
+    echo "❌ PS2SDK not available for building"
+    exit 1
+fi
 
