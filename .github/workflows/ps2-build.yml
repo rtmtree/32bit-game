@@ -24,7 +24,9 @@ jobs:
       
     - name: Build PS2 ELF
       run: |
-        source /usr/local/ps2dev/ps2dev.sh
+        export PATH=/usr/local/ps2dev/ee/bin:$PATH
+        export PS2SDK=/usr/local/ps2dev/ps2sdk
+        mkdir -p dist
         mips64r5900el-ps2-elf-gcc -O2 -Wall \
           -I$PS2SDK/ee/include \
           -I$PS2SDK/common/include \
@@ -35,7 +37,7 @@ jobs:
           
     - name: Create PS2 binary
       run: |
-        source /usr/local/ps2dev/ps2dev.sh
+        export PATH=/usr/local/ps2dev/ee/bin:$PATH
         mips64r5900el-ps2-elf-objcopy dist/ps2_game.elf -O binary dist/ps2_game.bin
         
     - name: Upload PS2 artifacts
