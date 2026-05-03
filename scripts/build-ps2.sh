@@ -1,0 +1,45 @@
+#!/bin/bash
+set -e
+
+# PS2 Build Script
+# PS2 development is complex on macOS. This script provides setup instructions.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DIST_DIR="$PROJECT_ROOT/dist"
+
+mkdir -p "$DIST_DIR"
+
+echo "=== PS2 Build Setup ==="
+echo ""
+echo "PS2 development requires the PS2SDK toolchain, which is challenging to set up on macOS."
+echo ""
+echo "Recommended options:"
+echo ""
+echo "Option 1: Use GitHub Actions (easiest)"
+echo "  1. Fork this repository"
+echo "  2. Enable GitHub Actions"
+echo "  3. Add a .github/workflows/ps2-build.yml file to build PS2 games on Linux runners"
+echo ""
+echo "Option 2: Use a Linux VM or remote server"
+echo "  1. Set up a Linux environment (Ubuntu/Debian recommended)"
+echo "  2. Follow PS2SDK installation: https://github.com/ps2dev/ps2sdk"
+echo "  3. Build your game on Linux"
+echo ""
+echo "Option 3: Use Docker with custom image (advanced)"
+echo "  The official ps2dev/ps2dev Docker image has dependency issues on Apple Silicon."
+echo "  You would need to build a custom Docker image with working PS2SDK."
+echo ""
+echo "Option 4: Cross-compile from Linux to PS2"
+echo "  If you have access to a Linux machine, PS2SDK builds reliably there."
+echo ""
+echo "Current status:"
+echo "- PS2 source file: src/ps2_main.c (created)"
+echo "- Build script: scripts/build-ps2.sh (this file)"
+echo "- Output: dist/ps2_game.elf (when built)"
+echo ""
+echo "To proceed, choose one of the options above and set up the appropriate environment."
+echo ""
+echo "For detailed PS2SDK installation instructions, visit:"
+echo "https://ps2dev.github.io/ps2sdk/"
+

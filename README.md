@@ -108,4 +108,49 @@ cd dist && python3 -m http.server 8080
 # then visit http://localhost:8080/webgame.html
 ```
 
+## PlayStation 2 (PS2) build
+
+PS2 development requires the PS2SDK toolchain. **Note: PS2SDK is difficult to set up on macOS Apple Silicon.**
+
+### Prerequisites
+
+PS2SDK builds reliably on Linux. On macOS, consider these options:
+
+**Option 1: Use GitHub Actions (recommended)**
+- ✅ `.github/workflows/ps2-build.yml` already created
+- Push to GitHub to trigger automatic PS2 builds
+- Download artifacts from Actions tab
+- No local setup required
+
+**Option 2: Use a Linux VM or remote server**
+- Set up Ubuntu/Debian Linux
+- Follow PS2SDK installation: https://github.com/ps2dev/ps2sdk
+
+**Option 3: Manual PS2SDK installation (Linux only)**
+```bash
+git clone https://github.com/ps2dev/ps2toolchain.git
+cd ps2toolchain
+./toolchain.sh
+source /path/to/ps2dev/ps2dev.sh
+```
+
+### Build
+
+Run the setup script to see options:
+```bash
+bash scripts/build-ps2.sh
+```
+
+If PS2SDK is properly installed, it will build `dist/ps2_game.elf`.
+
+### Run on PS2
+
+1. Copy `ps2_game.elf` to your PS2 via USB, network, or other method
+2. Use a homebrew loader like uLaunchELF to run the ELF
+3. Requires a modded PS2 or PS2 with FreeMCBoot installed
+
+### Project Layout (PS2)
+
+- `src/ps2_main.c` — PS2-specific game loop using libgs (Graphics Synthesizer)
+- `scripts/build-ps2.sh` — Build script with setup instructions
 
