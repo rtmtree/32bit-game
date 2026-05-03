@@ -14,57 +14,19 @@ mkdir -p "$DIST_DIR"
 echo "=== PS2 Local Build ==="
 echo ""
 
-# Check if PS2SDK is already available
-if [ -d "$PS2DEV_DIR/ps2sdk" ]; then
-    echo "✅ Found existing PS2SDK installation"
-    source "$PS2DEV_DIR/ps2dev.sh"
+# Check for working PS2SDK installation
+if command -v mips64r5900el-ps2-elf-gcc &> /dev/null; then
+    echo "✅ Found working PS2SDK toolchain"
+    BUILD_PS2=1
+elif [ -d "$PS2DEV_DIR/ee/bin" ]; then
+    echo "✅ Found PS2SDK installation, setting up paths"
+    export PATH="$PS2DEV_DIR/ee/bin:$PATH"
+    export PS2SDK="$PS2DEV_DIR/ps2sdk"
     BUILD_PS2=1
 else
-    echo "PS2SDK not found. Attempting local installation..."
+    echo "❌ PS2SDK not found or incomplete"
     echo ""
-    echo "This will take 30+ minutes and requires significant disk space (~2GB)"
-    echo ""
-    read -p "Continue with local PS2SDK installation? (y/N): " -n 1 -r
-    echo
-    
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        BUILD_PS2SDK=1
-    else
-        echo "Installation cancelled."
-        echo ""
-        echo "Alternative options:"
-        echo "1. Use GitHub Actions (recommended): https://github.com/rtmtree/32bit-game/actions"
-        echo "2. Use Linux VM or remote server"
-        echo "3. Manual setup instructions in README.md"
-        exit 0
-    fi
-fi
-
-# Install PS2SDK if needed
-if [ "$BUILD_PS2SDK" = "1" ]; then
-    echo "📦 Installing PS2SDK locally..."
-    
-    # Install required dependencies via Homebrew
-    echo "📚 Installing dependencies..."
-    brew install gmp mpfr texinfo autoconf automake libmpc || echo "Some dependencies may already be installed"
-    
-    # Clone PS2SDK
-    echo "📥 Cloning PS2SDK..."
-    if [ ! -d "$PS2DEV_DIR" ]; then
-        mkdir -p "$PS2DEV_DIR"
-        cd "$PS2DEV_DIR"
-        git clone https://github.com/ps2dev/ps2toolchain.git .
-    else
-        cd "$PS2DEV_DIR"
-    fi
-    
-    # Skip local PS2SDK build - it's not reliable on macOS Apple Silicon
-    echo "❌ Skipping local PS2SDK build"
-    echo ""
-    echo "PS2SDK builds are not reliable on macOS Apple Silicon due to:"
-    echo "- Library compatibility issues (GMP, MPFR, MPC)"
-    echo "- Cross-compilation toolchain problems"
-    echo "- Missing system dependencies"
+    echo "Local PS2SDK builds on macOS Apple Silicon are problematic."
     echo ""
     echo "🔄 Working alternatives:"
     echo ""
@@ -85,6 +47,7 @@ if [ "$BUILD_PS2SDK" = "1" ]; then
     echo "and will automatically build your PS2 game when you push changes."
     exit 1
 fi
+
 
 # Build PS2 game if PS2SDK is available
 if [ "$BUILD_PS2" = "1" ]; then
