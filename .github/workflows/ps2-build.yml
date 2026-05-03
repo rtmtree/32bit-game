@@ -6,39 +6,47 @@ on:
     paths:
       - 'src/ps2_main.c'
       - '.github/workflows/ps2-build.yml'
+      - 'Dockerfile.ps2'
   pull_request:
     branches: [ main, master ]
     paths:
       - 'src/ps2_main.c'
       - '.github/workflows/ps2-build.yml'
+      - 'Dockerfile.ps2'
   workflow_dispatch:
 
 jobs:
   build-ps2:
     runs-on: ubuntu-latest
-    container: ps2dev/ps2dev:latest
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       
+    - name: Build PS2SDK Docker image
+      run: |
+        docker build -f Dockerfile.ps2 -t ps2dev-custom .
+        
     - name: Build PS2 ELF
       run: |
-        export PATH=/usr/local/ps2dev/ee/bin:$PATH
-        export PS2SDK=/usr/local/ps2dev/ps2sdk
-        mkdir -p dist
-        mips64r5900el-ps2-elf-gcc -O2 -Wall \
-          -I$PS2SDK/ee/include \
-          -I$PS2SDK/common/include \
-          -L$PS2SDK/ee/lib \
-          src/ps2_main.c \
-          -o dist/ps2_game.elf \
-          -lgs -ldma -lpad -lc -lgcc
+        docker run --rm -v $PWD:/workspace ps2dev-custom:latest bash -c "
+          cd /workspace
+          mkdir -p dist
+          mips64r5900el-ps2-elf-gcc -O2 -Wall \
+            -I\$PS2SDK/ee/include \
+            -I\$PS2SDK/common/include \
+            -L\$PS2SDK/ee/lib \
+            src/ps2_main.c \
+            -o dist/ps2_game.elf \
+            -lgs -ldma -lpad -lc -lgcc
+        "
           
     - name: Create PS2 binary
       run: |
-        export PATH=/usr/local/ps2dev/ee/bin:$PATH
-        mips64r5900el-ps2-elf-objcopy dist/ps2_game.elf -O binary dist/ps2_game.bin
+        docker run --rm -v $PWD:/workspace ps2dev-custom:latest bash -c "
+          cd /workspace
+          mips64r5900el-ps2-elf-objcopy dist/ps2_game.elf -O binary dist/ps2_game.bin
+        "
         
     - name: Upload PS2 artifacts
       uses: actions/upload-artifact@v4
